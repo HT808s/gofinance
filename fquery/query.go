@@ -2,8 +2,9 @@ package fquery
 
 import (
 	"fmt"
-	"github.com/aktau/gofinance/util"
 	"time"
+
+	"github.com/HT808s/gofinance/util"
 )
 
 const (

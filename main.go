@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/aktau/gofinance/bloomberg"
-	"github.com/aktau/gofinance/fquery"
-	"github.com/aktau/gofinance/sqlitecache"
-	"github.com/aktau/gofinance/util"
-	"github.com/aktau/gofinance/yahoofinance"
 	"math"
 	"os"
-	"path/filepath"
 	"time"
+
+	"github.com/HT808s/gofinance/bloomberg"
+	"github.com/HT808s/gofinance/fquery"
+	"github.com/HT808s/gofinance/util"
+	"github.com/HT808s/gofinance/yahoofinance"
+	"github.com/fatih/color"
 )
 
 const (
@@ -73,40 +73,20 @@ func main() {
 		"EURUSD=X",
 	}
 
-	sqlitecache.VERBOSITY = 0
 	bloomberg.VERBOSITY = 2
 
-	cache, err := newCache(src)
-	if err != nil {
-		fmt.Printf("WARNING: could not initialize cache (%v), going to use pure source\n\t", err)
-	} else {
-		cache.SetQuoteExpiry(5 * time.Minute)
-		defer cache.Close()
-		src = cache
-	}
+	// cache, err := newCache(src)
+	// if err != nil {
+	// 	fmt.Printf("WARNING: could not initialize cache (%v), going to use pure source\n\t", err)
+	// } else {
+	// 	cache.SetQuoteExpiry(5 * time.Minute)
+	// 	defer cache.Close()
+	// 	src = cache
+	// }
 
 	// divhist(src)
 	// hist(src, symbols...)
 	calc(src, symbols...)
-}
-
-/* attempts to create a cached version of the passed-in source */
-func newCache(src fquery.Source) (fquery.Cache, error) {
-	/* get the path and try to create it if it doesn't exist */
-	dbpath := DbPath()
-	dbdir := filepath.Dir(dbpath)
-	if err := os.MkdirAll(dbdir, 0755); err != nil {
-		return nil, err
-	}
-
-	/* dir exists, now open the db */
-	cache, err := sqlitecache.New(dbpath, src)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("cache initialized, db located at:", dbpath)
-	return cache, nil
 }
 
 func divhist(src fquery.Source) {
@@ -187,47 +167,61 @@ func calc(src fquery.Source, symbols ...string) {
 		if r.Bid != 0 && r.Ask != 0 {
 			bidAskSpreadPerc := (r.Ask - r.Bid) / r.Bid
 			bidAskPrint := binaryfp(bidAskSpreadPerc*100, bidAskSpreadPerc < maxBidAskSpreadPerc)
-			fmt.Printf("bid/ask: %v/%v, spread: %v (%v)\n",
-				numberf(r.Bid), numberf(r.Ask), numberf(r.Ask-r.Bid), bidAskPrint)
+			fmt.Printf("bid/ask: %v, spread: %v (%v)\n",
+				color.MagentaString("%.2f/%.2f", r.Bid, r.Ask),
+				color.MagentaString("%.2f", r.Ask-r.Bid),
+				bidAskPrint)
 			if bidAskSpreadPerc < maxBidAskSpreadPerc {
-				fmt.Printf("if you want to buy this stock, place a %v at about %v\n", green("limit order"), greenf((r.Ask+r.Bid)/2))
+				fmt.Printf("if you want to buy this stock, place a %v at about %v\n", color.GreenString("limit order"), color.GreenString("%f", (r.Ask+r.Bid)/2))
 			} else {
-				fmt.Println(redu("CAUTION:"), "the spread of this stock is rather high")
+				fmt.Printf("%v the spread of this stock is rather high", color.RedString("CAUTION:"))
 			}
 		}
 
-		fmt.Printf("prevclose/open/lasttrade: %v/%v/%v\n",
-			numberf(r.PreviousClose), numberf(r.Open), numberf(r.LastTradePrice))
-		fmt.Printf("day low/high: %v/%v (%v)\n", numberf(r.DayLow), numberf(r.DayHigh), numberf(r.DayHigh-r.DayLow))
-		fmt.Printf("year low/high: %v/%v (%v)\n", numberf(r.YearLow), numberf(r.YearHigh), numberf(r.YearHigh-r.YearLow))
-		fmt.Printf("moving avg. 50/200: %v/%v\n", numberf(r.Ma50), numberf(r.Ma200))
+		fmt.Printf("prev_close/open/last_trade: %v\n",
+			color.MagentaString("%.2f/%.2f/%.2f",
+				r.PreviousClose, r.Open, r.LastTradePrice))
+		fmt.Printf("day low/high: %v\n",
+			color.MagentaString("%.2f/%.2f (%.2f)",
+				r.DayLow, r.DayHigh, r.DayHigh-r.DayLow))
+		fmt.Printf("year low/high: %v\n",
+			color.MagentaString("%.2f/%.2f (%.2f)",
+				r.YearLow, r.YearHigh, r.YearHigh-r.YearLow))
+		fmt.Printf("moving avg. 50/200: %v\n",
+			color.MagentaString("%.2f/%.2f", r.Ma50, r.Ma200))
 		divYield := binaryfp(r.DividendYield*100, r.DividendYield > minDivYield)
-		fmt.Printf("last ex-dividend: %v, div. per share: %v, div. yield: %v,\n earnings per share: %v, dividend payout ratio: %v\n",
-			r.DividendExDate.Format("02/01"), numberf(r.DividendPerShare),
-			divYield, numberf(r.EarningsPerShare), numberf(r.DivPayoutRatio()))
+		fmt.Printf("last ex-dividend: %v, div. per share: %v, div. yield: %v\n"+
+			"earnings per share: %v, dividend payout ratio: %v\n",
+			r.DividendExDate.Format("02/01"),
+			color.MagentaString("%.2f", r.DividendPerShare),
+			divYield,
+			r.EarningsPerShare,
+			color.MagentaString("%.2f", r.DivPayoutRatio()))
 		fmt.Printf("You would need to buy %v (€ %v) shares of this stock to reach a transaction cost below %v%%\n",
-			greenf(amountOfsharesForLowTxCost), greenf(amountOfsharesForLowTxCost*price), desiredTxCostPerc*100)
+			color.GreenString("%f", amountOfsharesForLowTxCost),
+			color.GreenString("%f", amountOfsharesForLowTxCost*price),
+			desiredTxCostPerc*100)
 		if r.PeRatio != 0 {
 			// terminal.Stdout.Colorf("The P/E-ratio is @m%.2f@|, ", r.PeRatio)
-			fmt.Println("The P/E-ratio is %v, ", numberf(r.PeRatio))
+			color.Magenta("The P/E-ratio is %v, ", r.PeRatio)
 			switch {
 			case 0 <= r.PeRatio && r.PeRatio <= 10:
-				underv := green("undervalued")
-				decline := red("market thinks its earnings are going to decline")
-				above := green("above the historic trend for this company")
+				underv := color.GreenString("undervalued")
+				decline := color.RedString("market thinks its earnings are going to decline")
+				above := color.GreenString("above the historic trend for this company")
 				fmt.Printf("this stock is either %v or the %v, either that or the companies earnings are %v\n", underv, decline, above)
 			case 11 <= r.PeRatio && r.PeRatio <= 17:
-				fmt.Println("this usually represents fair value.", green("fair value"))
+				fmt.Println("this usually represents fair value.", color.GreenString("fair value"))
 			case 18 <= r.PeRatio && r.PeRatio <= 25:
-				overv := red("overvalued")
-				incrlast := green("earnings have increased since the last earnings call")
-				increxp := green("earnings expected to increase substantially in the future")
+				overv := color.RedString("overvalued")
+				incrlast := color.GreenString("earnings have increased since the last earnings call")
+				increxp := color.GreenString("earnings expected to increase substantially in the future")
 				fmt.Printf("either the stock is %v or the %v figure was published. The stock may also be a growth stock with %v.\n",
 					overv, incrlast, increxp)
 			case 26 <= r.PeRatio:
-				bubble := red("bubble")
-				earnings := green("very high expected earnings")
-				low := red("this years earnings have been exceptionally low (unlikely)")
+				bubble := color.RedString("bubble")
+				earnings := color.GreenString("very high expected earnings")
+				low := color.RedString("this years earnings have been exceptionally low (unlikely)")
 				fmt.Printf("Either we're in a %v, or the company has %v, or %v\n",
 					bubble, earnings, low)
 			}
@@ -237,11 +231,10 @@ func calc(src fquery.Source, symbols ...string) {
 		if r.Ma200 != 0 {
 			fmt.Print("Richie Rich thinks this is in a ")
 			if wouldRichieRichBuy(r) {
-				fmt.Print(green("BUY"))
+				color.Green("BUY position")
 			} else {
-				fmt.Print(red("SELL"))
+				color.Red("SELL position")
 			}
-			fmt.Println(" position")
 		}
 
 		fmt.Println("======================")

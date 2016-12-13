@@ -3,10 +3,11 @@ package bloomberg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
-	"github.com/aktau/gofinance/util"
 	"net/http"
 	"time"
+
+	"github.com/HT808s/gofinance/fquery"
+	"github.com/HT808s/gofinance/util"
 )
 
 const (

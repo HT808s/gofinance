@@ -3,14 +3,15 @@ package yahoofinance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
-	"github.com/aktau/gofinance/util"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/HT808s/gofinance/fquery"
+	"github.com/HT808s/gofinance/util"
 )
 
 const (

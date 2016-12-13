@@ -2,8 +2,9 @@ package yahoofinance
 
 import (
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
 	"time"
+
+	"github.com/HT808s/gofinance/fquery"
 )
 
 const (
