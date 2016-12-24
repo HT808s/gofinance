@@ -2,8 +2,9 @@ package bloomberg
 
 import (
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
 	"time"
+
+	"github.com/HT808s/gofinance/fquery"
 )
 
 var VERBOSITY = 0
