@@ -7,8 +7,11 @@ TAGS ?=
 TARGETS ?= linux darwin windows
 PACKAGES=$(shell go list ./... | grep -v /vendor/)
 SOURCES ?= $(shell find . -name "*.go" -type f)
-VERSION ?= $(shell git describe --tags --always || git rev-parse --short HEAD)
+VERSION ?= $(shell git describe --abbrev=0 --tags --always || git rev-parse --short HEAD)
 LDFLAGS += -X 'main.Version=$(VERSION)'
+LDFLAGS += -X 'main.Githash=$(shell git rev-parse --short HEAD)'
+LDFLAGS += -X 'main.Buildstamp=$(shell date -u '+%Y-%m-%d_%I:%M:%S%p')'
+LDFLAGS += -X 'main.AppName=$(EXECUTABLE)'
 
 all:build
 
@@ -25,7 +28,7 @@ dep_update:
 	glide up
 
 build:$(EXECUTABLE)
-	go build -v -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)' -o bin/$@
+	go build -v -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)' -o bin/${EXECUTABLE} "./cmd/cli"
 
 test:
 	for PKG in $(PACKAGES); do go test -v -cover -coverprofile $$GOPATH/src/$$PKG/coverage.txt $$PKG || exit 1; done;

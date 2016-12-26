@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HT808s/gofinance/fquery"
+	"github.com/HT808s/gofinance/models"
 	"github.com/HT808s/gofinance/util"
 )
 
@@ -103,19 +103,19 @@ type YqlJsonSingleQuoteResponse struct {
 }
 
 type histResult interface {
-	Entries() []fquery.HistEntry
+	Entries() []*models.HistEntry
 }
 
 type YqlJsonHistResponse struct {
 	Query struct {
 		YqlJsonMeta
 		Results struct {
-			Rows []fquery.HistEntry `json:"quote"`
+			Rows []models.HistEntry `json:"quote"`
 		}
 	}
 }
 
-func (r *YqlJsonHistResponse) Entries() []fquery.HistEntry {
+func (r *YqlJsonHistResponse) Entries() []models.HistEntry {
 	return r.Query.Results.Rows
 }
 
@@ -123,12 +123,12 @@ type YqlJsonPureHistResponse struct {
 	Query struct {
 		YqlJsonMeta
 		Results struct {
-			Rows []fquery.HistEntry `json:"row"`
+			Rows []models.HistEntry `json:"row"`
 		}
 	}
 }
 
-func (r *YqlJsonPureHistResponse) Entries() []fquery.HistEntry {
+func (r *YqlJsonPureHistResponse) Entries() []models.HistEntry {
 	return r.Query.Results.Rows
 }
 
@@ -136,20 +136,20 @@ type respDividendHistory struct {
 	Query struct {
 		YqlJsonMeta
 		Results struct {
-			Rows []fquery.DividendEntry `json:"row"`
+			Rows []models.DividendEntry `json:"row"`
 		}
 	}
 }
 
 type divHistResult interface {
-	Entries() []fquery.DividendEntry
+	Entries() []models.DividendEntry
 }
 
-func (r *respDividendHistory) Entries() []fquery.DividendEntry {
+func (r *respDividendHistory) Entries() []models.DividendEntry {
 	return r.Query.Results.Rows
 }
 
-func yqlQuotes(symbols []string) ([]fquery.Quote, error) {
+func yqlQuotes(symbols []string) (models.Quotes, error) {
 	if len(symbols) == 0 {
 		return nil, nil
 	}
@@ -185,11 +185,11 @@ func yqlQuotes(symbols []string) ([]fquery.Quote, error) {
 		quotes = resp.Query.Results.Quote
 	}
 
-	results := make([]fquery.Quote, 0, len(quotes))
+	results := make(models.Quotes, 0, len(quotes))
 	for _, rawres := range quotes {
 		rawres.Process()
 
-		res := fquery.Quote{
+		res := models.Quote{
 			Name:             rawres.Name,
 			Symbol:           rawres.Symbol,
 			Updated:          time.Now(),
@@ -214,13 +214,13 @@ func yqlQuotes(symbols []string) ([]fquery.Quote, error) {
 		if rawres.ExDividendDate != nil {
 			res.DividendExDate = rawres.ExDividendDate.GetTime()
 		}
-		results = append(results, res)
+		results = append(results, &res)
 	}
 
 	return results, nil
 }
 
-func yqlHist(symbols []string, start *time.Time, end *time.Time) (map[string]fquery.Hist, error) {
+func yqlHist(symbols []string, start *time.Time, end *time.Time) (models.HistMap, error) {
 	if start == nil {
 		t := time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
 		start = &t
@@ -246,13 +246,13 @@ func yqlHist(symbols []string, start *time.Time, end *time.Time) (map[string]fqu
 		return &resp
 	}
 
-	res := make(map[string]fquery.Hist)
+	res := make(models.HistMap)
 
 	parallelFetch(queryGen, makeMarshal, addHistToMap(res), symbols)
 	return res, nil
 }
 
-func yqlDivHist(symbols []string, start *time.Time, end *time.Time) (map[string]fquery.DividendHist, error) {
+func yqlDivHist(symbols []string, start *time.Time, end *time.Time) (models.DividendHistMap, error) {
 	v := url.Values{}
 
 	if start != nil {
@@ -286,11 +286,11 @@ func yqlDivHist(symbols []string, start *time.Time, end *time.Time) (map[string]
 		return &resp
 	}
 
-	res := make(map[string]fquery.DividendHist)
+	res := make(models.DividendHistMap)
 	/* add will be called serially, so no need for synchronizing */
 	add := func(work workPair) {
 		if w, ok := work.Result.(divHistResult); ok {
-			res[work.Symbol] = fquery.DividendHist{
+			res[work.Symbol] = &models.DividendHist{
 				Symbol:    work.Symbol,
 				Dividends: w.Entries(),
 			}
@@ -303,7 +303,7 @@ func yqlDivHist(symbols []string, start *time.Time, end *time.Time) (map[string]
 
 /* makes yql query directly from the csv-file, instead of via
  * the yahoo.financial.historicaldata predefined table */
-func pureYqlHist(symbols []string, start *time.Time, end *time.Time) (map[string]fquery.Hist, error) {
+func pureYqlHist(symbols []string, start *time.Time, end *time.Time) (models.HistMap, error) {
 	v := url.Values{}
 
 	if start != nil {
@@ -335,12 +335,12 @@ func pureYqlHist(symbols []string, start *time.Time, end *time.Time) (map[string
 		return &resp
 	}
 
-	res := make(map[string]fquery.Hist)
+	res := make(models.HistMap)
 	parallelFetch(queryGen, makeMarshal, addHistToMap(res), symbols)
 	return res, nil
 }
 
-func addHistToMap(m map[string]fquery.Hist) func(workPair) {
+func addHistToMap(m models.HistMap) func(workPair) {
 	return func(work workPair) {
 		/* ugh, no generics, at least I could keep it to the parts that
 		 * aren't going to happen much */
@@ -354,7 +354,7 @@ func addHistToMap(m map[string]fquery.Hist) func(workPair) {
 				from = entries[len(entries)-1].Date.GetTime()
 				to = entries[0].Date.GetTime()
 			}
-			m[work.Symbol] = fquery.Hist{
+			m[work.Symbol] = &models.Hist{
 				Symbol:  work.Symbol,
 				From:    from,
 				To:      to,

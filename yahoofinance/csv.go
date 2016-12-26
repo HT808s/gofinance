@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HT808s/gofinance/fquery"
+	"github.com/HT808s/gofinance/models"
+
 	"github.com/HT808s/gofinance/util"
 )
 
@@ -18,7 +19,7 @@ const (
 	QuotesUrl = "http://download.finance.yahoo.com/d/quotes.csv"
 )
 
-func csvQuotes(symbols []string) ([]fquery.Quote, error) {
+func csvQuotes(symbols []string) (models.Quotes, error) {
 	v := url.Values{}
 
 	/* which symbols? */
@@ -37,7 +38,7 @@ func csvQuotes(symbols []string) ([]fquery.Quote, error) {
 	defer req.Close()
 	r := csv.NewReader(req)
 
-	results := make([]fquery.Quote, 0, len(symbols))
+	results := make(models.Quotes, 0, len(symbols))
 	for {
 		fields, err := r.Read()
 		if err == io.EOF {
@@ -46,7 +47,7 @@ func csvQuotes(symbols []string) ([]fquery.Quote, error) {
 			return nil, err
 		}
 
-		res := fquery.Quote{
+		res := models.Quote{
 			Name:             fields[0],
 			Symbol:           fields[1],
 			Ask:              floatOr(fields[3]),
@@ -69,7 +70,7 @@ func csvQuotes(symbols []string) ([]fquery.Quote, error) {
 			res.DividendExDate = tm
 		}
 
-		results = append(results, res)
+		results = append(results, &res)
 	}
 
 	return results, nil

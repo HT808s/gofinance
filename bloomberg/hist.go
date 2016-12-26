@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/HT808s/gofinance/fquery"
+	"github.com/HT808s/gofinance/models"
 	"github.com/HT808s/gofinance/util"
 )
 
@@ -20,7 +20,7 @@ type bloomHist struct {
 	DataValues []bloomHistValues `json:"data_values"`
 }
 
-func getHist(symbol string) (*fquery.Hist, error) {
+func getHist(symbol string) (*models.Hist, error) {
 	url := fmt.Sprintf(HIST_URL, "1Y", symbol)
 	vprintln("bloomberg: fetching historical,", url)
 	resp, err := http.Get(url)
@@ -49,7 +49,7 @@ func getHist(symbol string) (*fquery.Hist, error) {
 		minDate time.Time
 		maxDate time.Time
 	)
-	entries := make([]fquery.HistEntry, 0, 365)
+	entries := make([]*models.HistEntry, 0, 365)
 	for idx, e := range v.DataValues {
 		t := time.Unix(int64(e[0])/1000, 0)
 
@@ -60,13 +60,13 @@ func getHist(symbol string) (*fquery.Hist, error) {
 			maxDate = t
 		}
 
-		entries = append(entries, fquery.HistEntry{
+		entries = append(entries, &models.HistEntry{
 			Date:  util.YearMonthDay(t),
 			Close: e[1],
 		})
 	}
 
-	return &fquery.Hist{
+	return &models.Hist{
 		Symbol:  symbol,
 		From:    minDate,
 		To:      maxDate,
