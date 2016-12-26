@@ -5,10 +5,20 @@ Financial information retrieval and munging, will support multiple sources (Yaho
 
 The idea is to automate security analysis on a large scale. For example, it should be possible (in the future) to search for stock that has a good dividend yield, along with a good track record of increasing dividend, good P/E-ratio, et cetera.
 
-Gofinance workflow is inspired from [this](https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1#.29wbful30), interfaces are all at the root of the repository, folders are always specialized implementation the main:
+Gofinance workflow is inspired from [this](https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1#.29wbful30), interfaces are all located at the root and folders are specialized implementation the main:
+
+Implementations of the Source interface:
 
 -	yahoofinance: implements **Source**. Queries **Yahoo Finance** for financial data, .
 -	bloomberg: implements **Source**. Queries **Bloomberg** for financial data. (NOTE: Incomplete implementation)
+
+Data Models:
+
+-	models: data representation used by yahoofinance and bloomberg packages
+
+The desktop cli app:
+
+-	cmd/cli
 
 **NOTE**: This is still early days for gofinance, very rough around the edges. Pull requests welcome!
 
