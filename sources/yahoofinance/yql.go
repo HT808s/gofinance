@@ -185,7 +185,7 @@ func yqlQuotes(symbols []string) (models.Quotes, error) {
 		quotes = resp.Query.Results.Quote
 	}
 
-	results := make(models.Quotes, 0, len(quotes))
+	results := make(models.Quotes)
 	for _, rawres := range quotes {
 		rawres.Process()
 
@@ -214,7 +214,7 @@ func yqlQuotes(symbols []string) (models.Quotes, error) {
 		if rawres.ExDividendDate != nil {
 			res.DividendExDate = rawres.ExDividendDate.GetTime()
 		}
-		results = append(results, &res)
+		results[res.Symbol] = &res
 	}
 
 	return results, nil

@@ -10,7 +10,7 @@ const (
 	ErrTplNotSupported = "source '%s' does not support action '%s'"
 )
 
-type Quotes []*Quote
+type Quotes map[string]*Quote
 
 type Quote struct {
 	Symbol   string /* e.g.: VEUR.AS, Vanguard dev. europe on Amsterdam */
