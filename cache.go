@@ -1,4 +1,4 @@
-package fquery
+package gofinance
 
 import (
 	"io"

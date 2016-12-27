@@ -1,97 +1,74 @@
-# subdirectory in which the actual application resides
-APP_DIR := app
+.PHONY: all gofinance test build fmt vet clean release lint errcheck install update release release-check release-copy release-build release-dirs dep_install dep_update
 
-# the name of the executable to generate
+DIST := dist
 EXECUTABLE := gofinance
 
-# used for pushing releases
-GITHUB_USER := aktau
-GITHUB_REPO := gofinance
-GITHUB_RELEASE := github-release
+TAGS ?=
+TARGETS ?= linux darwin windows
+PACKAGES=$(shell go list ./... | grep -v /vendor/)
+SOURCES ?= $(shell find . -name "*.go" -type f)
+VERSION ?= $(shell git describe --abbrev=0 --tags --always || git rev-parse --short HEAD)
+LDFLAGS += -X 'main.Version=$(VERSION)'
+LDFLAGS += -X 'main.Githash=$(shell git rev-parse --short HEAD)'
+LDFLAGS += -X 'main.Buildstamp=$(shell date -u '+%Y-%m-%d_%I:%M:%S%p')'
+LDFLAGS += -X 'main.AppName=$(EXECUTABLE)'
 
-# todo: error out of the current git state is not the same as the tag,
-# otherwise you're pushing a binary that doesn't belong with the tag...
-LAST_TAG := $(shell git describe --abbrev=0 --tags)
+all:build
 
-UPLOAD_CMD = $(GITHUB_RELEASE) upload -u $(GITHUB_USER) -r $(GITHUB_REPO) -t $(LAST_TAG) -n $(subst /,-,$(FILE)) -f bin/$(FILE)
+fmt:
+	go fmt $(PACKAGES)
 
-# all executables to build when pushing releases, only include the amd64
-# binaries, otherwise the github release will become too big
-# NOTE: unfortunately, as of go 1.2, it's still difficult to cross-compile
-# libraries that use cgo (in this case: mattn/sqlite), so I'm only doing the
-# darwin build as of right now...
-UNIX_EXECUTABLES := \
-	darwin/amd64/$(EXECUTABLE) \
-	# freebsd/amd64/$(EXECUTABLE)
-	# linux/amd64/$(EXECUTABLE)
-WIN_EXECUTABLES := \
-	# windows/amd64/$(EXECUTABLE).exe
+vet:
+	go vet $(PACKAGES)
 
-COMPRESSED_EXECUTABLES=$(UNIX_EXECUTABLES:%=%.tar.bz2) $(WIN_EXECUTABLES:%.exe=%.zip)
-COMPRESSED_EXECUTABLE_TARGETS=$(COMPRESSED_EXECUTABLES:%=bin/%)
+dep_install:
+	glide install
 
-# the default make target just builds the executable
-all: $(EXECUTABLE)
+dep_update:
+	glide up
 
-bin/linux/arm/5/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARM=5 GOARCH=arm GOOS=linux go build -o "../$@"
-bin/linux/arm/7/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARM=7 GOARCH=arm GOOS=linux go build -o "../$@"
-bin/linux/386/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=386 GOOS=linux go build -o "../$@"
-bin/linux/amd64/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=amd64 GOOS=linux go build -o "../$@"
+build:$(EXECUTABLE)
+	go build -v -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)' -o bin/${EXECUTABLE} "./cmd/cli"
 
-bin/darwin/amd64/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=amd64 GOOS=darwin go build -o "../$@"
+test:
+	for PKG in $(PACKAGES); do go test -v -cover -coverprofile $$GOPATH/src/$$PKG/coverage.txt $$PKG || exit 1; done;
 
-bin/freebsd/386/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=386 GOOS=freebsd go build -o "../$@"
-bin/freebsd/amd64/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=amd64 GOOS=freebsd go build -o "../$@"
+release: release-dirs release-build release-copy release-check
 
-bin/windows/386/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=386 GOOS=windows go build -o "../$@"
-bin/windows/amd64/$(EXECUTABLE):
-	cd $(APP_DIR) && GOARCH=amd64 GOOS=windows go build -o "../$@"
+release-dirs:
+	mkdir -p $(DIST)/binaries $(DIST)/release
 
-# compressed artifacts, makes a huge difference (Go executable is ~9MB,
-# after compressing ~2MB)
-%.tar.bz2: %
-	tar -jcvf "$<.tar.bz2" "$<"
-%.zip: %.exe
-	zip "$@" "$<"
+release-build:
+	@which gox > /dev/null; if [ $$? -ne 0 ]; then \
+		go get -u github.com/mitchellh/gox; \
+	fi
+	gox -os="$(TARGETS)" -arch="amd64 386" -tags="$(TAGS)" -ldflags="$(EXTLDFLAGS)-s -w $(LDFLAGS)" -output="$(DIST)/binaries/$(EXECUTABLE)-$(VERSION)-{{.OS}}-{{.Arch}}" "./cmd/cli"
 
-# git tag -a v$(RELEASE) -m 'release $(RELEASE)'
-release: $(COMPRESSED_EXECUTABLE_TARGETS)
-	@echo Tagging...
-	git push && git push --tags
-	@echo Making github release...
-	$(GITHUB_RELEASE) release -u $(GITHUB_USER) -r $(GITHUB_REPO) \
-		-t $(LAST_TAG) -n $(LAST_TAG) || true
-	@echo Uploading...
-	$(foreach FILE,$(COMPRESSED_EXECUTABLES),$(UPLOAD_CMD);)
-	@echo Done
+release-copy:
+	$(foreach file,$(wildcard $(DIST)/binaries/$(EXECUTABLE)-*),cp $(file) $(DIST)/release/$(notdir $(file));)
 
-# update/install all dependencies
-dep:
-	cd $(APP_DIR) && go list -f '{{join .Deps "\n"}}' | xargs go list -f '{{if not .Standard}}{{.ImportPath}}{{end}}' | xargs go get -u
+release-check:
+	cd $(DIST)/release; $(foreach file,$(wildcard $(DIST)/release/$(EXECUTABLE)-*),sha1sum $(notdir $(file)) > $(notdir $(file)).sha1;)
 
-$(EXECUTABLE): dep
-	cd $(APP_DIR) && go build -o "$@"
-	@echo $(PWD) $(shell pwd)
-	mv "$(APP_DIR)/$@" "./$@"
+errcheck:
+	@which errcheck > /dev/null; if [ $$? -ne 0 ]; then \
+		go get -u github.com/kisielk/errcheck; \
+	fi
+	errcheck -verbose $(PACKAGES)
 
-# really ugly hack, I know, but "go install" doesn't let us supply
-# an output arguments
-install:
-	mv $(APP_DIR) ./gofinance
-	cd gofinance && go install
-	mv ./gofinance $(APP_DIR)
+lint:
+	@which golint > /dev/null; if [ $$? -ne 0 ]; then \
+			go get -u github.com/golang/lint/golint; \
+		fi
+		for PKG in $(PACKAGES); do golint -set_exit_status $$PKG || exit 1; done;
 
 clean:
-	rm go-app || true
-	rm $(EXECUTABLE) || true
-	rm -rf bin/
+	go clean -x -i ./...
+	find . -name coverage.txt -delete
+	find . -name *.tar.gz -delete
+	find . -name *.db -delete
+	-rm -rf bin/* \
+		.cover
 
-.PHONY: clean release dep install
+version:
+	@echo $(VERSION)

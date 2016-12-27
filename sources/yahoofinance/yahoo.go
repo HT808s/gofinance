@@ -2,8 +2,10 @@ package yahoofinance
 
 import (
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
 	"time"
+
+	"github.com/HT808s/gofinance"
+	"github.com/HT808s/gofinance/models"
 )
 
 const (
@@ -19,15 +21,15 @@ type Source struct {
 	srcType int
 }
 
-func NewCvs() fquery.Source {
+func NewCvs() gofinance.Source {
 	return &Source{srcType: TypeCsv}
 }
 
-func NewYql() fquery.Source {
+func NewYql() gofinance.Source {
 	return &Source{srcType: TypeYql}
 }
 
-func (s *Source) Quote(symbols []string) ([]fquery.Quote, error) {
+func (s *Source) Quote(symbols []string) (models.Quotes, error) {
 	switch s.srcType {
 	case TypeCsv:
 		return csvQuotes(symbols)
@@ -38,19 +40,19 @@ func (s *Source) Quote(symbols []string) ([]fquery.Quote, error) {
 	return nil, fmt.Errorf("yahoo finance: unknown backend type: %v", s.srcType)
 }
 
-func (s *Source) Hist(symbols []string) (map[string]fquery.Hist, error) {
+func (s *Source) Hist(symbols []string) (models.HistMap, error) {
 	return yqlHist(symbols, nil, nil)
 }
 
-func (s *Source) HistLimit(symbols []string, start time.Time, end time.Time) (map[string]fquery.Hist, error) {
+func (s *Source) HistLimit(symbols []string, start time.Time, end time.Time) (models.HistMap, error) {
 	return yqlHist(symbols, &start, &end)
 }
 
-func (s *Source) DividendHist(symbols []string) (map[string]fquery.DividendHist, error) {
+func (s *Source) DividendHist(symbols []string) (models.DividendHistMap, error) {
 	return yqlDivHist(symbols, nil, nil)
 }
 
-func (s *Source) DividendHistLimit(symbols []string, start time.Time, end time.Time) (map[string]fquery.DividendHist, error) {
+func (s *Source) DividendHistLimit(symbols []string, start time.Time, end time.Time) (models.DividendHistMap, error) {
 	return yqlDivHist(symbols, &start, &end)
 }
 

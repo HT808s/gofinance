@@ -1,13 +1,20 @@
 package bloomberg
 
 import (
-	"code.google.com/p/go.net/html"
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/HT808s/gofinance/models"
+
+	"github.com/HT808s/gofinance/util"
+	"golang.org/x/net/html"
+)
+
+const (
+	ErrTplNotSupported = "source '%s' does not support action '%s'"
 )
 
 type bloomQuote struct {
@@ -33,7 +40,7 @@ type bloomQuote struct {
 	DividendExDate   time.Time
 }
 
-func getQuote(symbol string) (*fquery.Quote, error) {
+func getQuote(symbol string) (*models.Quote, error) {
 	resp, err := http.Get("http://www.bloomberg.com/quote/" + symbol)
 	if err != nil {
 		return nil, err
@@ -49,7 +56,7 @@ func getQuote(symbol string) (*fquery.Quote, error) {
 	quote := &bloomQuote{}
 	walk(doc, quote)
 
-	return &fquery.Quote{
+	return &models.Quote{
 		Name:             quote.Name,
 		Symbol:           symbol,
 		Updated:          time.Now(),
@@ -261,4 +268,36 @@ func stripchars(str, chr string) string {
 		}
 		return -1
 	}, str)
+}
+
+type HistEntry struct {
+	Date     util.YearMonthDay `json:"Date"`
+	Open     float64           `json:"Open,string"`
+	Close    float64           `json:"Close,string"`
+	AdjClose float64           `json:"AdjClose,string"`
+	High     float64           `json:"High,string"`
+	Low      float64           `json:"Low,string"`
+	Volume   int64             `json:"Volume,string"`
+}
+
+type Hist struct {
+	Symbol  string
+	From    time.Time
+	To      time.Time
+	Entries []HistEntry
+}
+
+func (h *Hist) MovingAverage() float64 {
+	if len(h.Entries) == 0 {
+		return 0
+	}
+
+	var sum, count float64
+
+	for _, row := range h.Entries {
+		sum += row.Close
+		count++
+	}
+
+	return sum / count
 }

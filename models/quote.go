@@ -1,14 +1,16 @@
-package fquery
+package models
 
 import (
-	"fmt"
-	"github.com/aktau/gofinance/util"
+	"encoding/json"
+	"math"
 	"time"
 )
 
 const (
 	ErrTplNotSupported = "source '%s' does not support action '%s'"
 )
+
+type Quotes []*Quote
 
 type Quote struct {
 	Symbol   string /* e.g.: VEUR.AS, Vanguard dev. europe on Amsterdam */
@@ -55,41 +57,39 @@ func (q *Quote) DivPayoutRatio() float64 {
 	return 0
 }
 
-type Hist struct {
-	Symbol  string
-	From    time.Time
-	To      time.Time
-	Entries []HistEntry
+func (q *Quote) GetPrice() float64 {
+	if q.Ask != 0 {
+		return q.Ask
+	}
+	return q.LastTradePrice
 }
 
-type DividendHist struct {
-	Symbol    string
-	Dividends []DividendEntry
+// SharesToBuy gives you the number of shares to buy if you want
+//  * the transaction cost to be less than a certain percentage
+func (q *Quote) SharesToBuy(txCost, desiredTxCostPerc float64) float64 {
+	return math.Ceil((txCost - desiredTxCostPerc*txCost) /
+		(desiredTxCostPerc * q.GetPrice()))
 }
 
-type DividendEntry struct {
-	Date      util.YearMonthDay
-	Dividends float64 `json:",string"`
+// True if the Quote is increasing
+// False otherwise
+func (q *Quote) IsIncreasing() bool {
+	return q.LastTradePrice >= q.PreviousClose
 }
 
-type HistEntry struct {
-	Date     util.YearMonthDay `json:"Date"`
-	Open     float64           `json:"Open,string"`
-	Close    float64           `json:"Close,string"`
-	AdjClose float64           `json:"AdjClose,string"`
-	High     float64           `json:"High,string"`
-	Low      float64           `json:"Low,string"`
-	Volume   int64             `json:"Volume,string"`
+func (q *Quote) VariationValue() float64 {
+	return q.LastTradePrice - q.PreviousClose
 }
 
-type Source interface {
-	Quote(symbols []string) ([]Quote, error)
+func (q *Quote) VariationValuePercent() float64 {
+	return q.VariationValue() / q.PreviousClose * 100
+}
 
-	Hist(symbols []string) (map[string]Hist, error)
-	HistLimit(symbols []string, start time.Time, end time.Time) (map[string]Hist, error)
+func (q *Quote) WouldBuyOrSell() interface{} {
+	return q.PreviousClose > q.Ma200
+}
 
-	DividendHist(symbols []string) (map[string]DividendHist, error)
-	DividendHistLimit(symbols []string, start time.Time, end time.Time) (map[string]DividendHist, error)
-
-	fmt.Stringer
+func (q *Quote) JSON() string {
+	b, _ := json.Marshal(q)
+	return string(b)
 }

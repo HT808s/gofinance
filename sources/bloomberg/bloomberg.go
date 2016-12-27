@@ -2,24 +2,27 @@ package bloomberg
 
 import (
 	"fmt"
-	"github.com/aktau/gofinance/fquery"
 	"time"
+
+	"github.com/HT808s/gofinance"
+	"github.com/HT808s/gofinance/models"
 )
 
 var VERBOSITY = 0
 
-type Source struct{}
-
-func New() fquery.Source {
-	return &Source{}
+type BloombergSource struct {
 }
 
-func (s *Source) Quote(symbols []string) ([]fquery.Quote, error) {
+func New() gofinance.Source {
+	return &BloombergSource{}
+}
+
+func (s *BloombergSource) Quote(symbols []string) (models.Quotes, error) {
 	symbols = convertSymbols(symbols)
 
-	slice := make([]fquery.Quote, 0, len(symbols))
+	slice := make(models.Quotes, 0, len(symbols))
 
-	results := make(chan *fquery.Quote, len(symbols))
+	results := make(chan *models.Quote, len(symbols))
 	errors := make(chan error, len(symbols))
 
 	/* fetch all symbols in parallel */
@@ -40,19 +43,19 @@ func (s *Source) Quote(symbols []string) ([]fquery.Quote, error) {
 			fmt.Println("bloomberg: error while fetching,", err)
 		case r := <-results:
 			r.Symbol = bloombergToYahoo(r.Symbol)
-			slice = append(slice, *r)
+			slice = append(slice, r)
 		}
 	}
 
 	return slice, nil
 }
 
-func (s *Source) Hist(symbols []string) (map[string]fquery.Hist, error) {
+func (s *BloombergSource) Hist(symbols []string) (models.HistMap, error) {
 	symbols = convertSymbols(symbols)
 
-	m := make(map[string]fquery.Hist, 0)
+	m := make(models.HistMap, 0)
 
-	results := make(chan *fquery.Hist, len(symbols))
+	results := make(chan *models.Hist, len(symbols))
 	errors := make(chan error, len(symbols))
 
 	/* fetch all symbols in parallel */
@@ -73,26 +76,26 @@ func (s *Source) Hist(symbols []string) (map[string]fquery.Hist, error) {
 			fmt.Println("bloomberg: hist error,", err)
 		case r := <-results:
 			r.Symbol = bloombergToYahoo(r.Symbol)
-			m[r.Symbol] = *r
+			m[r.Symbol] = r
 		}
 	}
 
 	return m, nil
 }
 
-func (s *Source) HistLimit(symbols []string, start time.Time, end time.Time) (map[string]fquery.Hist, error) {
-	return nil, fmt.Errorf(fquery.ErrTplNotSupported, s.String(), "histlimit")
+func (s *BloombergSource) HistLimit(symbols []string, start time.Time, end time.Time) (models.HistMap, error) {
+	return nil, fmt.Errorf(ErrTplNotSupported, s.String(), "histlimit")
 }
 
-func (s *Source) DividendHist(symbols []string) (map[string]fquery.DividendHist, error) {
-	return nil, fmt.Errorf(fquery.ErrTplNotSupported, s.String(), "dividendhist")
+func (s *BloombergSource) DividendHist(symbols []string) (models.DividendHistMap, error) {
+	return nil, fmt.Errorf(ErrTplNotSupported, s.String(), "dividendhist")
 }
 
-func (s *Source) DividendHistLimit(symbols []string, start time.Time, end time.Time) (map[string]fquery.DividendHist, error) {
-	return nil, fmt.Errorf(fquery.ErrTplNotSupported, s.String(), "dividendhistlimi")
+func (s *BloombergSource) DividendHistLimit(symbols []string, start time.Time, end time.Time) (models.DividendHistMap, error) {
+	return nil, fmt.Errorf(ErrTplNotSupported, s.String(), "dividendhistlimi")
 }
 
-func (s *Source) String() string {
+func (s *BloombergSource) String() string {
 	return "Bloomberg"
 }
 
