@@ -28,7 +28,7 @@ func (a *App) Run() {
 	txCost := 9.75
 
 	for _, r := range res {
-		buffer.WriteString(r.PrettyDisplay(txCost, desiredTxCostPerc))
+		buffer.WriteString(DisplayQuote(r, txCost, desiredTxCostPerc))
 	}
 	fmt.Println(buffer.String())
 }

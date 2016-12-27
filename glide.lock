@@ -1,6 +1,12 @@
-hash: a43f6429374b52f4400d12752a8cee9a2b64464c880a269f6eca43750b1a6314
-updated: 2016-12-13T17:33:21.136150668+01:00
+hash: ce67bfe6e55835d1661dfaf710b8cbb6d228bea29e6f169b81d6c589616a81b9
+updated: 2016-12-27T19:28:10.344671455+01:00
 imports:
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+  subpackages:
+  - parse
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/fatih/color
   version: dea9d3a26a087187530244679c1cfb3a42937794
 - name: github.com/mattn/go-colorable
@@ -16,4 +22,6 @@ imports:
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: e9044be3ab2a8e11d4e1f418d12f0790d57e8d70
 testImports: []

@@ -9,7 +9,7 @@ import (
 
 	"github.com/HT808s/gofinance/models"
 
-	"github.com/aktau/gofinance/util"
+	"github.com/HT808s/gofinance/util"
 	"golang.org/x/net/html"
 )
 

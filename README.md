@@ -7,7 +7,7 @@ The idea is to automate security analysis on a large scale. For example, it shou
 
 Gofinance workflow is inspired from [this](https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1#.29wbful30), interfaces are all located at the root and folders are specialized implementation the main:
 
-Implementations of the Source interface:
+Implementations of the Source interface can be found in the sources directory:
 
 -	yahoofinance: implements **Source**. Queries **Yahoo Finance** for financial data, .
 -	bloomberg: implements **Source**. Queries **Bloomberg** for financial data. (NOTE: Incomplete implementation)

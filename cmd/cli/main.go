@@ -6,8 +6,8 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/HT808s/gofinance"
-	"github.com/HT808s/gofinance/bloomberg"
-	"github.com/HT808s/gofinance/yahoofinance"
+	"github.com/HT808s/gofinance/sources/bloomberg"
+	"github.com/HT808s/gofinance/sources/yahoofinance"
 )
 
 // Variables linked during build
