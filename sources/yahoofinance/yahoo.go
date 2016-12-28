@@ -21,7 +21,7 @@ type Source struct {
 	srcType int
 }
 
-func NewCvs() gofinance.Source {
+func NewCsv() gofinance.Source {
 	return &Source{srcType: TypeCsv}
 }
 

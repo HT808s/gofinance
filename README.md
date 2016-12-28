@@ -71,7 +71,7 @@ $ ./bin/gofinance --symbols "AAPL"
 # analyze Ferrari, Tesla and BMW
 $ ./bin/gofinance -s "RACE" -s "TSLA" -s "BMW.DE"
 # run with a different source
-$ ./bin/gofinance -s "RACE" -s "TSLA" -s "BMW.DE" --source "yahoo_cvs"
+$ ./bin/gofinance -s "RACE" -s "TSLA" -s "BMW.DE" --source "yahoo_csv"
 ```
 
 Features
