@@ -19,15 +19,15 @@ var (
 	SourcesMap map[string]gofinance.Source
 
 	symbols = kingpin.Flag("symbols", "ticker symbols to analyze").Short('s').Required().Strings()
-	source  = kingpin.Flag("source", "bloomberg || yahoo_yql || yahoo_cvs").
-		Default("yahoo_yql").Enum("bloomberg", "yahoo_yql", "yahoo_cvs")
+	source  = kingpin.Flag("source", "bloomberg || yahoo_yql || yahoo_csv").
+		Default("yahoo_yql").Enum("bloomberg", "yahoo_yql", "yahoo_csv")
 )
 
 func init() {
 	SourcesMap = map[string]gofinance.Source{
 		"bloomberg": bloomberg.New(),
 		"yahoo_yql": yahoofinance.NewYql(),
-		"yahoo_cvs": yahoofinance.NewCvs()}
+		"yahoo_csv": yahoofinance.NewCsv()}
 }
 
 func main() {
