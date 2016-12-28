@@ -9,7 +9,6 @@ import (
 
 	"github.com/HT808s/gofinance/models"
 
-	"github.com/HT808s/gofinance/util"
 	"golang.org/x/net/html"
 )
 
@@ -268,36 +267,4 @@ func stripchars(str, chr string) string {
 		}
 		return -1
 	}, str)
-}
-
-type HistEntry struct {
-	Date     util.YearMonthDay `json:"Date"`
-	Open     float64           `json:"Open,string"`
-	Close    float64           `json:"Close,string"`
-	AdjClose float64           `json:"AdjClose,string"`
-	High     float64           `json:"High,string"`
-	Low      float64           `json:"Low,string"`
-	Volume   int64             `json:"Volume,string"`
-}
-
-type Hist struct {
-	Symbol  string
-	From    time.Time
-	To      time.Time
-	Entries []HistEntry
-}
-
-func (h *Hist) MovingAverage() float64 {
-	if len(h.Entries) == 0 {
-		return 0
-	}
-
-	var sum, count float64
-
-	for _, row := range h.Entries {
-		sum += row.Close
-		count++
-	}
-
-	return sum / count
 }
