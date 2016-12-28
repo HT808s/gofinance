@@ -37,7 +37,7 @@ func csvQuotes(symbols []string) (models.Quotes, error) {
 	defer req.Close()
 	r := csv.NewReader(req)
 
-	results := make(models.Quotes, 0, len(symbols))
+	quotes := make(models.Quotes)
 	for {
 		fields, err := r.Read()
 		if err == io.EOF {
@@ -69,10 +69,10 @@ func csvQuotes(symbols []string) (models.Quotes, error) {
 			res.DividendExDate = tm
 		}
 
-		results = append(results, &res)
+		quotes[res.Symbol] = &res
 	}
 
-	return results, nil
+	return quotes, nil
 }
 
 func floatOr(orig string) float64 {

@@ -20,7 +20,7 @@ func New() gofinance.Source {
 func (s *BloombergSource) Quote(symbols []string) (models.Quotes, error) {
 	symbols = convertSymbols(symbols)
 
-	slice := make(models.Quotes, 0, len(symbols))
+	quotes := make(models.Quotes)
 
 	results := make(chan *models.Quote, len(symbols))
 	errors := make(chan error, len(symbols))
@@ -43,11 +43,11 @@ func (s *BloombergSource) Quote(symbols []string) (models.Quotes, error) {
 			fmt.Println("bloomberg: error while fetching,", err)
 		case r := <-results:
 			r.Symbol = bloombergToYahoo(r.Symbol)
-			slice = append(slice, r)
+			quotes[r.Symbol] = r
 		}
 	}
 
-	return slice, nil
+	return quotes, nil
 }
 
 func (s *BloombergSource) Hist(symbols []string) (models.HistMap, error) {
