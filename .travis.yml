@@ -6,4 +6,5 @@ go:
 
 
 before_install:
+  - mkdir /home/travis/gopath/bin
   - curl https://glide.sh/get | sh
