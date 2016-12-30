@@ -5,10 +5,10 @@ go:
 
 
 before_install:
-  - mkdir /home/travis/gopath/bin
+  - mkdir -p /home/travis/gopath/bin
   - curl https://glide.sh/get | sh
   - make dep_install
-  - go version
+  - ls vendor
 
 script:
   - make test
