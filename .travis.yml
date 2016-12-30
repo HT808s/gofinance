@@ -2,9 +2,10 @@ language: go
 
 go:
   - 1.7
-  - master
 
 
 before_install:
   - mkdir /home/travis/gopath/bin
   - curl https://glide.sh/get | sh
+  - make dep_install
+  - go version
